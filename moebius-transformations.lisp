@@ -43,7 +43,7 @@
   (with-slots (a b c d) mt
     (- (* a d) (* b c))))
 
-(defmethod evaluate ((mt moebius-transformation) (z complex))
+(defmethod evaluate ((mt moebius-transformation) (z number))
   (with-slots (a b c d) mt
     (/ (+ (* a z) b)
        (+ (* c z) d))))
@@ -67,6 +67,9 @@
 (defun line (basepoint direction)
   (make-instance 'line :basepoint basepoint :direction direction))
 
+(defmethod print-object ((line line) stream)
+  (format stream "(line ~A ~A)" (basepoint line) (direction line)))
+
 (defmethod initialize-instance :after ((line line) &key)
   ;; normalise direction to length 1
   (with-slots (direction) line
@@ -80,6 +83,8 @@
 (defun circle (center radius)
   (make-instance 'circle :center center :radius radius))
 
+(defmethod print-object ((circle circle) stream)
+  (format stream "(circle ~A ~A)" (center circle) (radius circle)))
 
 (defun dist (point-1 point-2)
   (abs (- point-1 point-2)))
@@ -142,11 +147,11 @@
     ;; TODO
     ))
 
-(defmethod element-p ((point complex) (line line))
+(defmethod element-p ((point number) (line line))
   (realp (/ (- point (basepoint line))
             (direction line))))
 
-(defmethod element-p ((point complex) (circle circle))
+(defmethod element-p ((point number) (circle circle))
   (= (dist^2 point (center circle))
      (expt (radius circle) 2)))
 
@@ -195,22 +200,22 @@
                (b* (/ a det)))
           (translate b* (scale a* (circle-inversion (translate (/ d c) line))))))))
 
-(defmethod translate ((offset complex) (line line))
+(defmethod translate ((offset number) (line line))
   (make-instance 'line
                  :basepoint (+ offset (basepoint line))
                  :direction (direction line)))
 
-(defmethod translate ((offset complex) (circle circle))
+(defmethod translate ((offset number) (circle circle))
   (make-instance 'circle
                  :center (+ offset (center circle))
                  :radius (radius circle)))
 
-(defmethod scale ((factor complex) (line line))
+(defmethod scale ((factor number) (line line))
   (make-instance 'line
                  :basepoint (* factor (basepoint line))
                  :direction (* factor (direction line))))
 
-(defmethod scale ((factor complex) (circle circle))
+(defmethod scale ((factor number) (circle circle))
   (make-instance 'circle
                  :center (* factor (center circle))
                  :radius (* (abs factor) (radius circle))))
