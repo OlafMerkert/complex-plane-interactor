@@ -1,7 +1,9 @@
 (defpackage :complex-continued-fractions-geometry
   (:nicknames :ccfg)
   (:use :cl :ol :iterate :moebius-transformations)
-  (:export))
+  (:export
+   #:maps
+   #:regions))
 
 (in-package :complex-continued-fractions-geometry)
 

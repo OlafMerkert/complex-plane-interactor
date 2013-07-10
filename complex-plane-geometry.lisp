@@ -8,6 +8,9 @@
 
 (in-package :complex-plane-geometry)
 
+(defparameter window-width 1000)
+(defparameter window-height 800)
+
 (define-application-frame complex-plane ()
   ((bound :initform 1000
           :accessor bound)
@@ -17,23 +20,28 @@
             :initform nil
             :accessor objects))
   (:panes (canvas :application
-                  :width 1000 :height 800
+                  :width window-width :height window-height
                   :incremental-redisplay t
                   :scroll-bars t)
           (int :interactor
-               :width 400 :height 800))
+               :width 400 :height window-height))
   (:layouts (default (horizontally () int canvas))))
 
-(defparameter transformation
-  (make-3-point-transformation*
-   ;; from
-   0 0
-   1 0
-   0 1
-   ;; to
-   500 400
-   510 400
-   500 390))
+(progn
+  (defparameter pixels-per-one 100)
+
+  (let ((h-center (floor window-width 2))
+        (v-center (floor  window-height 2)))
+    (defparameter transformation
+      (make-3-point-transformation*
+       ;; from
+       0 0
+       1 0
+       0 1
+       ;; to
+       h-center v-center
+       (+ h-center pixels-per-one) v-center
+       h-center (- v-center pixels-per-one)))))
 
 ;; this gives a drawing region of [-50,50] x [-40, 40]
 
@@ -56,7 +64,9 @@
     (let ((point-1 (+ (basepoint line) (* min (direction line))))
           (point-2 (+ (basepoint line) (* max (direction line)))))
       (with-canvas
-        (with-output-as-presentation (canvas line 'line)
+        (with-output-as-presentation (canvas line 'line
+                                             :allow-sensitive-inferiors nil
+                                             :single-box t)
           (draw-line* canvas
                       (realpart point-1) (imagpart point-1)
                       (realpart point-2) (imagpart point-2)
@@ -68,18 +78,15 @@
 
 (defmethod add-object ((circle circle))
   (with-canvas
-    (with-output-as-presentation (canvas circle 'circle))
-    (draw-circle* (get-frame-pane *application-frame* 'canvas)
-                  (realpart (center circle))
-                  (imagpart (center circle))
-                  (radius circle)
-                  :filled nil
-                  :transformation transformation)))
-
-(define-complex-plane-command (com-experiment :name "Experiment" :menu t)
-    ()
-  (draw-line* *standard-output* 0 0 20 20 :transformation transformation)
-  (draw-circle* *standard-output* 0 0 10 :filled nil :transformation transformation))
+    (with-output-as-presentation (canvas circle 'circle
+                                         :allow-sensitive-inferiors nil
+                                         :single-box t)
+      (draw-circle* (get-frame-pane *application-frame* 'canvas)
+                    (realpart (center circle))
+                    (imagpart (center circle))
+                    (radius circle)
+                    :filled nil
+                    :transformation transformation))))
 
 (define-complex-plane-command (com-hover :name "Hover test" :menu t)
     ((projective-line 'projective-line)
@@ -98,6 +105,22 @@
      (direction 'number :prompt "Direction"))
   (add-object (make-instance 'line :basepoint basepoint :direction direction)))
 
+(define-complex-plane-command (com-translate
+                               :name "Translate" :menu t)
+    ((object 'projective-line)
+     (offset 'number))
+  (add-object
+   (translate offset object)))
+
+(define-complex-plane-command (com-draw-farey-sets :name "Draw Farey sets" :menu t)
+    ()
+  (dolist (r ccfg:regions)
+    (unless (symbolp r)
+      (add-object  r))))
+
+(define-complex-plane-command (com-clear-canvas :name "Clear Canvas" :menu t)
+    ()
+  (with-canvas (window-clear canvas)))
 
 ;;; TODO get presentations to work
 
