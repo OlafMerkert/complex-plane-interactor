@@ -55,8 +55,12 @@
 (define-presentation-type projective-line ())
 
 (define-presentation-type line () :inherit-from 'projective-line)
+(define-presentation-type line-segment () :inherit-from 'line)
 
 (define-presentation-type circle () :inherit-from 'projective-line)
+(define-presentation-type circle-segment () :inherit-from 'circle)
+
+(define-presentation-type triangle ())
 
 (defmethod add-object ((line line))
   ;; determine the edge points
@@ -72,6 +76,20 @@
                       (realpart point-2) (imagpart point-2)
                       :transformation transformation))))))
 
+(defmethod add-object ((line-segment line-segment))
+  (with-slots ((min start) (max end)) line-segment
+    (let ((point-1 (+ (basepoint line-segment) (* min (direction line-segment))))
+          (point-2 (+ (basepoint line-segment) (* max (direction line-segment)))))
+      (with-canvas
+        (with-output-as-presentation (canvas line-segment 'line-segment
+                                             :allow-sensitive-inferiors nil
+                                             :single-box t)
+          (draw-line* canvas
+                      (realpart point-1) (imagpart point-1)
+                      (realpart point-2) (imagpart point-2)
+                      :transformation transformation))))))
+
+
 (defmethod add-object :after (object)
   (pushnew object (objects *application-frame*)))
 
@@ -81,17 +99,34 @@
     (with-output-as-presentation (canvas circle 'circle
                                          :allow-sensitive-inferiors nil
                                          :single-box t)
-      (draw-circle* (get-frame-pane *application-frame* 'canvas)
+      (draw-circle* canvas
                     (realpart (center circle))
                     (imagpart (center circle))
                     (radius circle)
                     :filled nil
                     :transformation transformation))))
 
-(define-complex-plane-command (com-hover :name "Hover test" :menu t)
-    ((projective-line 'projective-line)
-     (line 'line)
-     (circle 'circle)))
+(defmethod add-object ((circle-segment circle-segment))
+  (with-canvas
+    (with-output-as-presentation (canvas circle-segment 'circle-segment
+                                         :allow-sensitive-inferiors nil
+                                         :single-box t)
+      (draw-circle* canvas
+                    (realpart (center circle-segment))
+                    (imagpart (center circle-segment))
+                    (radius circle-segment)
+                    :start-angle (* 2 pi (start circle-segment))
+                    :end-angle   (* 2 pi (end circle-segment))
+                    :filled nil
+                    :transformation transformation))))
+
+(defmethod add-object ((triangle triangle))
+  (with-canvas
+    (with-output-as-presentation (canvas triangle 'triangle
+                                         :allow-sensitive-inferiors t
+                                         :single-box t)
+      (mapc #'add-object (triangle-edges triangle)))))
+
 
 (define-complex-plane-command (com-add-circle
                                :name "Add circle (center & radius)" :menu t)
@@ -104,6 +139,13 @@
     ((basepoint 'number :prompt "Point")
      (direction 'number :prompt "Direction"))
   (add-object (make-instance 'line :basepoint basepoint :direction direction)))
+
+(define-complex-plane-command (com-add-triangle
+                               :name "Add triangle (vertices)" :menu t)
+    ((point-1 'number :prompt "Vertex 1")
+     (point-2 'number :prompt "Vertex 1")
+     (point-3 'number :prompt "Vertex 1"))
+  (add-object (make-instance 'triangle :vertices (list point-1 point-2 point-3))))
 
 (define-complex-plane-command (com-translate
                                :name "Translate" :menu t)

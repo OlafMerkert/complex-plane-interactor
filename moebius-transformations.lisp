@@ -32,7 +32,9 @@
    #:line-segment
    #:circle-segment
    #:start
-   #:end))
+   #:end
+   #:triangle
+   #:triangle-edges))
 
 (in-package :moebius-transformations)
 
@@ -138,14 +140,15 @@ points (fahnentransitiv)."
 
 
 (defclass/f triangle ()
-  (vertices))
+  (vertices)
+  (:documentation "represent a triangle with 0 angles at the
+  vertices."))
 
 (defun triangle-edges (triangle)
   (dbind (p1 p2 p3) (vertices triangle)
          (list (line-segment-between-points p1 p2 p3)
                (line-segment-between-points p2 p3 p1)
                (line-segment-between-points p3 p1 p2))))
-
 
 
 (defun dist (point-1 point-2)
@@ -313,7 +316,9 @@ points (fahnentransitiv)."
             (center (/ (* lotpunkt 2))))
       (make-instance 'circle :center center :radius (abs center))))))
 
-;;; TODO try to obtain nice formulas for circles and lines (if possible)
+;;; TODO try to obtain nice formulas for circles and lines (if
+;;; possible)
+;;; TODO transformations of segments of circles and lines
 
 ;;; intersections of lines with rectangles
 (defun intersect-rectangle (line &key rmin rmax imin imax)
