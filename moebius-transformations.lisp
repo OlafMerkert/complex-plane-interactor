@@ -1,5 +1,6 @@
 (defpackage :moebius-transformations
   (:nicknames :sl2z)
+  (:shadow :compose)
   (:use :cl :ol :iterate )
   (:export
    #:i
@@ -37,6 +38,10 @@
    #:triangle-edges))
 
 (in-package :moebius-transformations)
+
+(defgeneric transform (transformation object))
+
+(defgeneric intersect (object-1 object-2))
 
 ;;; CAREFUL, we use I as constant here (for convenience)
 (defconstant i (complex 0 1))
