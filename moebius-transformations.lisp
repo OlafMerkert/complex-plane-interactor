@@ -28,7 +28,11 @@
    #:scale
    #:circle-inversion
    #:det
-   #:intersect-rectangle))
+   #:intersect-rectangle
+   #:line-segment
+   #:circle-segment
+   #:start
+   #:end))
 
 (in-package :moebius-transformations)
 
@@ -43,6 +47,17 @@
   (with-slots (a b c d) mt
     (- (* a d) (* b c))))
 
+(defun compose (mt-1 mt-2)
+  (with-slots (a b c d) mt-1
+    (with-slots ((u a) (v b) (w c) (x d)) mt-2
+      (macrolet ((weave (r1 r2 s1 s2) `(+ (* ,r1 ,s1) (* ,r2 ,s2))))
+        (mt (weave a b u w) (weave a b v x)
+            (weave c d u w) (weave c d v x))))))
+
+(defun inverse (mt)
+  (with-slots (a b c d) mt
+    (mt d (- b) (- c) a)))
+
 (defmethod evaluate ((mt moebius-transformation) (z number))
   (with-slots (a b c d) mt
     (/ (+ (* a z) b)
@@ -55,6 +70,25 @@
 (defun well-defined-p (mt)
   (with-slots (a b c d) mt
     (not (zerop (- (* a d) (* b c))))))
+
+(defun moebius-from-points (p1 p2 p3 &optional (q1 0 q1-p) (q2 1 q2-p) (q3 :infinity q3-p))
+  "A moebius transformation is specified by the images of three
+points (fahnentransitiv)."
+  (cond ((or q1-p q2-p q3-p)
+         (compose (inverse (moebius-from-points q1 q2 q3))
+                  (moebius-from-points p1 p2 p3)))
+        ((not (distinct-p p1 p2 p3)) (error "can't determine transformation when two points are the same."))
+        ;; formula: z-p1 / z-p3  p2-p3 / p2-p1
+        ((eq p1 :infinity)
+         (mt (- p2 p3) 0 1 (- p3)))
+        ((eq p2 :infinity)
+         (mt 1 (- p1) 1 (- p3)))
+        ((eq p3 :infinity)
+         (mt 1 (- p1) 0 (- p2 p1)))
+        (t (let ((f1 (- p2 p3))
+                 (f2 (- p2 p1)))
+             (mt f1 (* f1 -1 p1)
+                 f2 (* f2 -1 p3))))))
 
 ;;; some complex plane geometric objects
 (defclass projective-line ()
@@ -69,6 +103,19 @@
 
 (defmethod print-object ((line line) stream)
   (format stream "(line ~A ~A)" (basepoint line) (direction line)))
+
+(defclass/f line-segment (line)
+  (start end))
+
+(defun line-segment-between-points (point-1 point-2 point-3)
+  (let ((mt (moebius-from-points point-1 point-2 point-3)))
+    (transform (inverse mt)
+               (make-instance 'circle-segment
+                              :center 1/2
+                              :radius 1/2
+                              :start 0
+                              :end 1/2)))) ;; 1 corresponds to full circle, going counter-clockwise
+
 
 (defmethod initialize-instance :after ((line line) &key)
   ;; normalise direction to length 1
@@ -86,6 +133,21 @@
 (defmethod print-object ((circle circle) stream)
   (format stream "(circle ~A ~A)" (center circle) (radius circle)))
 
+(defclass/f circle-segment (circle)
+  (start end))
+
+
+(defclass/f triangle ()
+  (vertices))
+
+(defun triangle-edges (triangle)
+  (dbind (p1 p2 p3) (vertices triangle)
+         (list (line-segment-between-points p1 p2 p3)
+               (line-segment-between-points p2 p3 p1)
+               (line-segment-between-points p3 p1 p2))))
+
+
+
 (defun dist (point-1 point-2)
   (abs (- point-1 point-2)))
 
@@ -93,8 +155,8 @@
   (abs^2 (- point-1 point-2)))
 
 (defun abs^2 (point)
-  (+ (expt (realpart point) 2)
-     (expt (imagpart point) 2)))
+  (+ (^ (realpart point) 2)
+     (^ (imagpart point) 2)))
 
 
 (defun mittelsenkrechte (point-1 point-2)
