@@ -35,7 +35,8 @@
    #:start
    #:end
    #:triangle
-   #:triangle-edges))
+   #:triangle-edges
+   #:fundamental-domain-base))
 
 (in-package :moebius-transformations)
 
@@ -92,13 +93,14 @@ multiplication."
     (not (zerop (- (* a d) (* b c))))))
 
 (defun moebius-from-points (p1 p2 p3 &optional (q1 0 q1-p) (q2 1 q2-p) (q3 :infinity q3-p))
-  "A moebius transformation is specified by the images of three
-points (fahnentransitiv)."
+  "A moebius transformation is specified by the images q of three
+points p (fahnentransitiv)."
   (cond ((or q1-p q2-p q3-p)
          (compose (inverse (moebius-from-points q1 q2 q3))
                   (moebius-from-points p1 p2 p3)))
         ((not (distinct-p p1 p2 p3)) (error "can't determine transformation when two points are the same."))
         ;; formula: z-p1 / z-p3  p2-p3 / p2-p1
+        ;; it means we send p1 -> 0, p2 -> 1 and p3 -> oo
         ((eq p1 :infinity)
          (mt (- p2 p3) 0 1 (- p3)))
         ((eq p2 :infinity)
@@ -181,14 +183,20 @@ points (fahnentransitiv)."
   (:documentation "represent a triangle with 0 angles at the
   vertices."))
 
+(defparameter fundamental-domain-base
+  (make-instance 'circle-segment
+                 :center 1/2
+                 :radius 1/2
+                 :start 0
+                 :end 1/2)
+  "The base of the 'triangle' with vertices 0,1 and oo.")
+
 (defun line-segment-between-points (point-1 point-2 point-3)
-  (let ((mt (moebius-from-points point-1 point-2 point-3)))
-    (transform (inverse mt)
-               (make-instance 'circle-segment
-                              :center 1/2
-                              :radius 1/2
-                              :start 0
-                              :end 1/2))))
+  ""
+  ;; find the transformation that sends 0 -> point-1, 1 -> point-2 and
+  ;; oo -> point-3
+  (let ((mt (inverse (moebius-from-points point-1 point-2 point-3))))
+    (transform mt fundamental-domain-base)))
 
 (defun triangle-edges (triangle)
   (dbind (p1 p2 p3) (vertices triangle)
@@ -362,9 +370,9 @@ points (fahnentransitiv)."
 ;;; the (geometrically) most interesting part is inversion at the circle
 (defmethod circle-inversion ((circle circle))
   (cond
-    ;; if centered at origin, nothing happens
+    ;; if centered at origin, only the radius changes
     ((zerop (center circle))
-     circle)
+     (make-instance 'circle :center 0 :radius (/ (radius circle))))
     ;; if origin is on the circle, we get a line
     ((element-p 0 circle)
      (make-instance 'line
@@ -373,6 +381,8 @@ points (fahnentransitiv)."
     ;; otherwise we get a circle
     (t (mvbind (point-1 point-2) (intersect (make-instance 'line :basepoint 0 :direction (center circle))
                                             circle)
+         ;; we compute the image of the two points on a line through
+         ;; the origin, which contains the center
          (let* ((point-1 (/ point-1)) (point-2 (/ point-2))
                 (center (/ (+ point-1 point-2) 2)))
            (make-instance 'circle :center center
@@ -382,8 +392,7 @@ points (fahnentransitiv)."
   (cond
     ;; if going through the origin, line is just reflected along real axis
     ((element-p 0 line)
-     (make-instance 'line :basepoint 0
-                    :direction (/ (direction line))))
+     (make-instance 'line :basepoint 0 :direction (/ (direction line))))
     ;; otherwise, we get a circle through the origin
     (t
      (let* ((lotpunkt (intersect line (make-instance 'line :basepoint 0
@@ -395,6 +404,7 @@ points (fahnentransitiv)."
 ;;; possible)
 ;;; TODO transformations of segments of circles and lines
 
+;;; **********************************************************************
 ;;; intersections of lines with rectangles
 (defun intersect-rectangle (line &key rmin rmax imin imax)
   ;; TODO use a sorting network (have always <=4 entries)
