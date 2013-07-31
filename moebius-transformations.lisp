@@ -125,6 +125,10 @@ points p (fahnentransitiv)."
 
 (defgeneric intersect (object-1 object-2))
 
+(defgeneric element-p (point object)
+  (:documentation "test whether the given `point' lies on `object'. If
+  yes, return the parameter describing the position."))
+
 ;;; **********************************************************************
 ;;; lines
 (defclass/f line (projective-line)
@@ -137,8 +141,17 @@ points p (fahnentransitiv)."
 (defun line (basepoint direction)
   (make-instance 'line :basepoint basepoint :direction direction))
 
+(defun line-segment (basepoint direction start end)
+  (make-instance 'line :basepoint basepoint :direction direction
+                 :start start :end end))
+
 (defmethod print-object ((line line) stream)
   (format stream "(line ~A ~A)" (basepoint line) (direction line)))
+
+(defmethod print-object ((line-segment line-segment) stream)
+  (format stream "(line-segment ~A ~A ~A ~A)"
+          (basepoint line-segment) (direction line-segment)
+          (start line-segment) (end line-segment)))
 
 (defgeneric normalise-direction (line)
   (:documentation "Normalise the `direction' vector to length 1."))
@@ -172,8 +185,18 @@ points p (fahnentransitiv)."
 (defun circle (center radius)
   (make-instance 'circle :center center :radius radius))
 
+(defun circle-segment (center radius start end)
+  (make-instance 'circle :center center :radius radius
+                 :start start :end end))
+
 (defmethod print-object ((circle circle) stream)
   (format stream "(circle ~A ~A)" (center circle) (radius circle)))
+
+(defmethod print-object ((circle-segment circle-segment) stream)
+  (format stream "(circle-segment ~A ~A ~A ~A)"
+          (center circle-segment) (radius circle-segment)
+          (start circle-segment) (end circle-segment)))
+
 
 ;;; **********************************************************************
 ;;; triangles
@@ -182,6 +205,13 @@ points p (fahnentransitiv)."
   (vertices)
   (:documentation "represent a triangle with 0 angles at the
   vertices."))
+
+(defun triangle (a b c)
+  (make-instance 'triangle :vertices (list a b c)))
+
+(defmethod print-object ((triangle triangle) stream)
+  (format stream "(triangle ~{~A~^ ~})" (vertices triangle)))
+
 
 (defparameter fundamental-domain-base
   (make-instance 'circle-segment
