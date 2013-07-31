@@ -115,8 +115,8 @@
                     (realpart (center circle-segment))
                     (imagpart (center circle-segment))
                     (radius circle-segment)
-                    :start-angle (* 2 pi (start circle-segment))
-                    :end-angle   (* 2 pi (end circle-segment))
+                    :start-angle (* 2 pi (end circle-segment))
+                    :end-angle   (* 2 pi (start circle-segment))
                     :filled nil
                     :transformation transformation))))
 
@@ -163,6 +163,12 @@
 (define-complex-plane-command (com-clear-canvas :name "Clear Canvas" :menu t)
     ()
   (with-canvas (window-clear canvas)))
+
+(define-complex-plane-command (com-test-stuff :name "Test stuff" :menu t)
+    ()
+  (add-object fundamental-domain-base)
+  (add-object (make-instance 'line-segment :basepoint 0 :direction (+ 1 i)
+                             :start -1 :end 2)))
 
 ;;; TODO get presentations to work
 
