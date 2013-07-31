@@ -288,13 +288,51 @@ points p (fahnentransitiv)."
     ;; TODO
     ))
 
+(defun between (a b c)
+  (or (<= a b c)
+      (>= a b c)))
+
+(defun between-mod1 (a b c)
+  (let ((b (mod (- b a) 1))
+        (c (mod (- c a) 1)))
+    (or (zerop c) ; TODO account for full-circle?
+        (<= 0 b c))))
+
 (defmethod element-p ((point number) (line line))
-  (realp (/ (- point (basepoint line))
-            (direction line))))
+  (let ((param (/ (- point (basepoint line))
+                  (direction line))))
+    (when (realp param) param)))
+
+(defmethod element-p ((point number) (line-segment line-segment))
+  (let ((param (/ (- point (basepoint line-segment))
+                  (direction line-segment))))
+    (when (and (realp param)
+               (between (start line-segment) param (end line-segment)))
+      param)))
+
+;;; TODO implement almost=
+(defparameter tolerance 1e-8)
+
+(defun almost= (a b)
+  (< (abs (- a b)) tolerance))
 
 (defmethod element-p ((point number) (circle circle))
-  (= (dist^2 point (center circle))
-     (expt (radius circle) 2)))
+  (when (almost= (dist^2 point (center circle))
+           (expt (radius circle) 2))
+    (angle (- point (center circle)))))
+
+(defmethod element-p ((point number) (circle-segment circle-segment))
+  (when (almost= (dist^2 point (center circle-segment))
+           (expt (radius circle-segment) 2))
+    (let ((a (angle (- point (center circle-segment)))))
+      (when (between-mod1 (start circle-segment) a (end circle-segment))
+        a))))
+
+(defmethod param-element (parameter (line line))
+  (+ (basepoint line) (* parameter (direction line))))
+
+(defmethod param-element (parameter (circle circle))
+  (+ (center circle) (* (radius circle) (exp (* 2 pi parameter)))))
 
 
 (defun distinct-p (arg &rest args)
