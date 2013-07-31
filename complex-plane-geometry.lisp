@@ -127,6 +127,8 @@
                                          :single-box t)
       (mapc #'add-object (triangle-edges triangle)))))
 
+(define-complex-plane-command (com-quit :name "Quit") ()
+  (frame-exit *application-frame*))
 
 (define-complex-plane-command (com-add-circle
                                :name "Add circle (center & radius)" :menu t)
@@ -143,8 +145,8 @@
 (define-complex-plane-command (com-add-triangle
                                :name "Add triangle (vertices)" :menu t)
     ((point-1 'number :prompt "Vertex 1")
-     (point-2 'number :prompt "Vertex 1")
-     (point-3 'number :prompt "Vertex 1"))
+     (point-2 'number :prompt "Vertex 2")
+     (point-3 'number :prompt "Vertex 3"))
   (add-object (make-instance 'triangle :vertices (list point-1 point-2 point-3))))
 
 (define-complex-plane-command (com-translate
