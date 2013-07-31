@@ -39,12 +39,23 @@
 
 (in-package :moebius-transformations)
 
-(defgeneric transform (transformation object))
-
-(defgeneric intersect (object-1 object-2))
-
 ;;; CAREFUL, we use I as constant here (for convenience)
 (defconstant i (complex 0 1))
+
+;;; distance functions
+(defun dist (point-1 point-2)
+  (abs (- point-1 point-2)))
+
+(defun dist^2 (point-1 point-2)
+  (abs^2 (- point-1 point-2)))
+
+(defun abs^2 (point)
+  (+ (^ (realpart point) 2)
+     (^ (imagpart point) 2)))
+
+
+;;; **********************************************************************
+;;; Moebius transformations
 
 (defclass/f moebius-transformation ()
   (a b c d)
@@ -55,6 +66,8 @@
     (- (* a d) (* b c))))
 
 (defun compose (mt-1 mt-2)
+  "Obtain composite of moebius transformations by matrix
+multiplication."
   (with-slots (a b c d) mt-1
     (with-slots ((u a) (v b) (w c) (x d)) mt-2
       (macrolet ((weave (r1 r2 s1 s2) `(+ (* ,r1 ,s1) (* ,r2 ,s2))))
@@ -97,13 +110,27 @@ points (fahnentransitiv)."
              (mt f1 (* f1 -1 p1)
                  f2 (* f2 -1 p3))))))
 
+;;; **********************************************************************
 ;;; some complex plane geometric objects
 (defclass projective-line ()
   ())
 
+(defclass/f segment ()
+  (start
+   end))
+
+(defgeneric transform (transformation object))
+
+(defgeneric intersect (object-1 object-2))
+
+;;; **********************************************************************
+;;; lines
 (defclass/f line (projective-line)
   (basepoint
    direction))
+
+(defclass line-segment (line segment)
+  ())
 
 (defun line (basepoint direction)
   (make-instance 'line :basepoint basepoint :direction direction))
@@ -111,8 +138,48 @@ points (fahnentransitiv)."
 (defmethod print-object ((line line) stream)
   (format stream "(line ~A ~A)" (basepoint line) (direction line)))
 
-(defclass/f line-segment (line)
+(defgeneric normalise-direction (line)
+  (:documentation "Normalise the `direction' vector to length 1."))
+
+(defmethod normalise-direction ((line line))
+  (with-slots (direction) line
+    (setf direction
+          (/ direction (abs direction)))))
+
+(defmethod normalise-direction ((line-segment line-segment))
+  (with-slots (direction start end) line-segment
+    (let ((scale (abs direction)))
+      (unless (= scale 1)
+        (setf direction (/ direction scale)
+              start (* start scale)
+              end (* end scale))))))
+
+(defmethod initialize-instance :after ((line line) &key)
+  (normalise-direction line))
+
+;;; **********************************************************************
+;;; circles
+(defclass/f circle (projective-line)
+  (center
+   radius))
+
+(defclass/f circle-segment (circle)
+  ;; 1 corresponds to full circle, going counter-clockwise
   (start end))
+
+(defun circle (center radius)
+  (make-instance 'circle :center center :radius radius))
+
+(defmethod print-object ((circle circle) stream)
+  (format stream "(circle ~A ~A)" (center circle) (radius circle)))
+
+;;; **********************************************************************
+;;; triangles
+
+(defclass/f triangle ()
+  (vertices)
+  (:documentation "represent a triangle with 0 angles at the
+  vertices."))
 
 (defun line-segment-between-points (point-1 point-2 point-3)
   (let ((mt (moebius-from-points point-1 point-2 point-3)))
@@ -121,33 +188,7 @@ points (fahnentransitiv)."
                               :center 1/2
                               :radius 1/2
                               :start 0
-                              :end 1/2)))) ;; 1 corresponds to full circle, going counter-clockwise
-
-
-(defmethod initialize-instance :after ((line line) &key)
-  ;; normalise direction to length 1
-  (with-slots (direction) line
-    (setf direction
-          (/ direction (abs direction)))))
-
-(defclass/f circle (projective-line)
-  (center
-   radius))
-
-(defun circle (center radius)
-  (make-instance 'circle :center center :radius radius))
-
-(defmethod print-object ((circle circle) stream)
-  (format stream "(circle ~A ~A)" (center circle) (radius circle)))
-
-(defclass/f circle-segment (circle)
-  (start end))
-
-
-(defclass/f triangle ()
-  (vertices)
-  (:documentation "represent a triangle with 0 angles at the
-  vertices."))
+                              :end 1/2))))
 
 (defun triangle-edges (triangle)
   (dbind (p1 p2 p3) (vertices triangle)
@@ -155,16 +196,6 @@ points (fahnentransitiv)."
                (line-segment-between-points p2 p3 p1)
                (line-segment-between-points p3 p1 p2))))
 
-
-(defun dist (point-1 point-2)
-  (abs (- point-1 point-2)))
-
-(defun dist^2 (point-1 point-2)
-  (abs^2 (- point-1 point-2)))
-
-(defun abs^2 (point)
-  (+ (^ (realpart point) 2)
-     (^ (imagpart point) 2)))
 
 
 (defun mittelsenkrechte (point-1 point-2)
@@ -174,6 +205,7 @@ points (fahnentransitiv)."
                  :basepoint (/ (+ point-1 point-2) 2)
                  :direction (* i (- point-1 point-2))))
 
+;;; **********************************************************************
 ;;; some functions for incidence of geometric objects
 (defmethod intersect ((line-1 line) (line-2 line))
   (let ((a (realpart (direction line-1)))
@@ -203,6 +235,7 @@ points (fahnentransitiv)."
       (let* ((d (sqrt (- (expt b 2) (* 4 a c))))
              (l1 (/ (+ (- b) d) 2 a))
              (l2 (/ (- (- b) d) 2 a)))
+        ;; look at the solutions of the quadratic equation.
         (cond ((zerop d) (+ p (* l1 (direction line))))
               ((realp d) (values (+ p (* l1 (direction line)))
                                  (+ p (* l2 (direction line)))))
@@ -275,21 +308,58 @@ points (fahnentransitiv)."
                  :basepoint (+ offset (basepoint line))
                  :direction (direction line)))
 
+(defmethod translate ((offset number) (line-segment line-segment))
+  (make-instance 'line-segment
+                 :basepoint (+ offset (basepoint line-segment))
+                 :direction (direction line-segment)
+                 :start (start line-segment)
+                 :end (end line-segment)))
+
 (defmethod translate ((offset number) (circle circle))
   (make-instance 'circle
                  :center (+ offset (center circle))
                  :radius (radius circle)))
 
+(defmethod translate ((offset number) (circle-segment circle-segment))
+  (make-instance 'circle-segment
+                 :center (+ offset (center circle-segment))
+                 :radius (radius circle-segment)
+                 :start (start circle-segment)
+                 :end (end circle-segment)))
+
+;;; for scaling, we assume that `factor' is never 0.
 (defmethod scale ((factor number) (line line))
   (make-instance 'line
                  :basepoint (* factor (basepoint line))
                  :direction (* factor (direction line))))
+
+(defmethod scale ((factor number) (line-segment line-segment))
+  (make-instance 'line-segment
+                 :basepoint (* factor (basepoint line-segment))
+                 :direction (* factor (direction line-segment))
+                 :start (start line-segment)
+                 :end (end line-segment)))
+
+(defun m+ (&rest args)
+  (mod (apply #'+ args) 1))
+
+(defun angle (number)
+  (/ (atan number) 2 pi))
 
 (defmethod scale ((factor number) (circle circle))
   (make-instance 'circle
                  :center (* factor (center circle))
                  :radius (* (abs factor) (radius circle))))
 
+(defmethod scale ((factor number) (circle-segment circle-segment))
+  (let ((angle (angle factor)))
+    (make-instance 'circle-segment
+                   :center (* factor (center circle-segment))
+                   :radius (* (abs factor) (radius circle-segment))
+                   :start (m+ (start circle-segment) angle)
+                   :end (m+ (end circle-segment) angle ))))
+
+;;; the (geometrically) most interesting part is inversion at the circle
 (defmethod circle-inversion ((circle circle))
   (cond
     ;; if centered at origin, nothing happens
@@ -342,6 +412,6 @@ points (fahnentransitiv)."
 (bind-multi ((endpoints-line-real endpoints-line-real endpoints-line-imag)
              (realpart realpart imagpart))
   (defun endpoints-line-real (line min max)
-                 (let ((v (realpart (direction line))))
-                   (unless (zerop v)
-                     (endpoints (realpart (basepoint line)) v min max)))))
+    (let ((v (realpart (direction line))))
+      (unless (zerop v)
+        (endpoints (realpart (basepoint line)) v min max)))))
