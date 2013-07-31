@@ -436,7 +436,7 @@ points p (fahnentransitiv)."
                    :end (m+ (end circle-segment) angle ))))
 
 ;;; the (geometrically) most interesting part is inversion at the circle
-(defmethod circle-inversion ((circle circle))
+(defun circle-inversion/circle (circle)
   (cond
     ;; if centered at origin, only the radius changes
     ((zerop (center circle))
@@ -453,10 +453,12 @@ points p (fahnentransitiv)."
          ;; the origin, which contains the center
          (let* ((point-1 (/ point-1)) (point-2 (/ point-2))
                 (center (/ (+ point-1 point-2) 2)))
-           (make-instance 'circle :center center
-                          :radius (dist center point-1)))))))
+           (make-instance 'circle :center center :radius (dist center point-1)))))))
 
-(defmethod circle-inversion ((line line))
+(defmethod circle-inversion ((circle circle))
+  (circle-inversion/circle circle))
+
+(defun circle-inversion/line (line)
   (cond
     ;; if going through the origin, line is just reflected along real axis
     ((element-p 0 line)
@@ -466,8 +468,61 @@ points p (fahnentransitiv)."
      (let* ((lotpunkt (intersect line (make-instance 'line :basepoint 0
                                                      :direction (* i (direction line)))))
             (center (/ (* lotpunkt 2))))
-      (make-instance 'circle :center center :radius (abs center))))))
+       (make-instance 'circle :center center :radius (abs center))))))
 
+(defmethod circle-inversion ((line line))
+  (circle-inversion/line line))
+
+(defun methodcall (method specialisers &rest args)
+  ;; TODO this thing still has many problems.
+  "Call a `method' with the specified `specialisers' on `args'. Note
+that `method' is expected to be a function."
+  (let ((m (find-method method nil
+                        (mapcar #'find-class (mklist specialisers)))))
+    (funcall (sb-pcl:method-function m) args nil)))
+
+(defmethod segment ((line line) start end)
+  (unless (and start end)
+    (error "Missing line-segment delimiters: start ~A  end ~A"
+           start end))
+  (make-instance 'line-segment
+                 :basepoint (basepoint line)
+                 :direction (direction line)
+                 :start start
+                 :end end))
+
+(defmethod segment ((circle circle) start end)
+  (unless (and start end)
+    (error "Missing circle-segment delimiters: start ~A  end ~A"
+           start end))
+  (make-instance 'circle-segment
+                 :center (center circle)
+                 :radius (radius circle)
+                 :start start
+                 :end end))
+
+(defmethod circle-inversion ((line-segment line-segment))
+  (let ((start-point (param-element (start line-segment) line-segment))
+        (end-point (param-element (end line-segment) line-segment))
+        (line-image (circle-inversion/line line-segment)))
+    (segment line-image
+             (element-p start-point line-image)
+             (element-p end-point line-image))))
+
+(defmethod circle-inversion ((circle-segment circle-segment))
+  (let ((start-point (param-element (start circle-segment) circle-segment))
+        (end-point (param-element (end circle-segment) circle-segment))
+        (circle-image (circle-inversion/circle circle-segment)))
+    ;; TODO what about orientation??
+    (segment circle-image
+             (element-p start-point circle-image)
+             (element-p end-point circle-image))))
+
+;;; TODO figure out a more reliable way to describe circle segments
+;;; how about using three points? or perhaps a vector pointing in the
+;;; right direction?
+
+    
 ;;; TODO try to obtain nice formulas for circles and lines (if
 ;;; possible)
 ;;; TODO transformations of segments of circles and lines
