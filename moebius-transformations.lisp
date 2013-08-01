@@ -310,8 +310,7 @@ points p (fahnentransitiv)."
                (between (start line-segment) param (end line-segment)))
       param)))
 
-;;; TODO implement almost=
-(defparameter tolerance 1e-8)
+(defparameter tolerance 1e-7)
 
 (defun almost= (a b)
   (< (abs (- a b)) tolerance))
@@ -332,7 +331,7 @@ points p (fahnentransitiv)."
   (+ (basepoint line) (* parameter (direction line))))
 
 (defmethod param-element (parameter (circle circle))
-  (+ (center circle) (* (radius circle) (exp (* 2 pi parameter)))))
+  (+ (center circle) (* (radius circle) (exp (* 2 pi i parameter)))))
 
 
 (defun distinct-p (arg &rest args)
@@ -420,7 +419,8 @@ points p (fahnentransitiv)."
   (mod (apply #'+ args) 1))
 
 (defun angle (number)
-  (/ (atan number) 2 pi))
+  (let ((a (/ (atan (imagpart number) (realpart number)) 2 pi)))
+    (values (mod a 1) a)))
 
 (defmethod scale ((factor number) (circle circle))
   (make-instance 'circle
@@ -502,16 +502,16 @@ that `method' is expected to be a function."
                  :end end))
 
 (defmethod circle-inversion ((line-segment line-segment))
-  (let ((start-point (param-element (start line-segment) line-segment))
-        (end-point (param-element (end line-segment) line-segment))
+  (let ((start-point (/ (param-element (start line-segment) line-segment)))
+        (end-point (/ (param-element (end line-segment) line-segment)))
         (line-image (circle-inversion/line line-segment)))
     (segment line-image
              (element-p start-point line-image)
              (element-p end-point line-image))))
 
 (defmethod circle-inversion ((circle-segment circle-segment))
-  (let ((start-point (param-element (start circle-segment) circle-segment))
-        (end-point (param-element (end circle-segment) circle-segment))
+  (let ((start-point (/ (param-element (start circle-segment) circle-segment)))
+        (end-point (/ (param-element (end circle-segment) circle-segment)))
         (circle-image (circle-inversion/circle circle-segment)))
     ;; TODO what about orientation??
     (segment circle-image
