@@ -40,6 +40,8 @@
 
 (in-package :moebius-transformations)
 
+(declaim (optimize (debug 3)))
+
 ;;; CAREFUL, we use I as constant here (for convenience)
 (defconstant i (complex 0 1))
 
@@ -125,7 +127,7 @@ points p (fahnentransitiv)."
 
 (defgeneric intersect (object-1 object-2))
 
-(defgeneric element-p (point object)
+(defgeneric element-p (point object &key)
   (:documentation "test whether the given `point' lies on `object'. If
   yes, return the parameter describing the position."))
 
@@ -233,7 +235,7 @@ points p (fahnentransitiv)."
          (list (line-segment-between-points p1 p2 p3)
                (line-segment-between-points p2 p3 p1)
                (line-segment-between-points p3 p1 p2))))
-
+;;; TODO edge computation for triangles still not working properly
 
 
 (defun mittelsenkrechte (point-1 point-2)
@@ -288,6 +290,7 @@ points p (fahnentransitiv)."
     ;; TODO
     ))
 
+;;; TODO support for infinity
 (defun between (a b c)
   (or (<= a b c)
       (>= a b c)))
@@ -298,39 +301,60 @@ points p (fahnentransitiv)."
     (or (zerop c) ; TODO account for full-circle?
         (<= 0 b c))))
 
-(defmethod element-p ((point number) (line line))
+(defmethod element-p ((point number) (line line) &key)
   (let ((param (/ (- point (basepoint line))
                   (direction line))))
-    (when (realp param) param)))
+    (when (almost= 0 (imagpart param))
+      (realpart param))))
 
-(defmethod element-p ((point number) (line-segment line-segment))
+(defmethod element-p ((point number) (line-segment line-segment) &key (segment t))
   (let ((param (/ (- point (basepoint line-segment))
                   (direction line-segment))))
-    (when (and (realp param)
-               (between (start line-segment) param (end line-segment)))
-      param)))
+    (when (and (almost= 0 (imagpart param))
+               (or (not segment)
+                   (between (start line-segment) (realpart param) (end line-segment))))
+      (realpart param))))
+
+(defconstant infinity :infinity)
+
+(defmethod element-p ((point (eql infinity)) (line line) &key)
+  infinity)
+
+(defmethod element-p ((point (eql infinity)) (circle circle) &key))
+
+(defun i/ (x)
+  "inversion on the complex projective line."
+  (case x
+    (0 infinity)
+    (:infinity 0)
+    (t (/ x))))
 
 (defparameter tolerance 1e-7)
 
 (defun almost= (a b)
   (< (abs (- a b)) tolerance))
 
-(defmethod element-p ((point number) (circle circle))
+(defmethod element-p ((point number) (circle circle) &key)
   (when (almost= (dist^2 point (center circle))
            (expt (radius circle) 2))
     (angle (- point (center circle)))))
 
-(defmethod element-p ((point number) (circle-segment circle-segment))
+(defmethod element-p ((point number) (circle-segment circle-segment)&key (segment t))
   (when (almost= (dist^2 point (center circle-segment))
            (expt (radius circle-segment) 2))
     (let ((a (angle (- point (center circle-segment)))))
-      (when (between-mod1 (start circle-segment) a (end circle-segment))
+      (when (or (not segment)
+                (between-mod1 (start circle-segment) a (end circle-segment)))
         a))))
 
 (defmethod param-element (parameter (line line))
   (+ (basepoint line) (* parameter (direction line))))
 
+(defmethod param-element ((parameter (eql infinity)) (line line))
+  infinity)
+
 (defmethod param-element (parameter (circle circle))
+  (assert (realp parameter))
   (+ (center circle) (* (radius circle) (exp (* 2 pi i parameter)))))
 
 
@@ -442,7 +466,7 @@ points p (fahnentransitiv)."
     ((zerop (center circle))
      (make-instance 'circle :center 0 :radius (/ (radius circle))))
     ;; if origin is on the circle, we get a line
-    ((element-p 0 circle)
+    ((element-p 0 circle :segment nil)
      (make-instance 'line
                     :basepoint (/ (* 2 (center circle)))
                     :direction (* i (center circle))))
@@ -502,21 +526,21 @@ that `method' is expected to be a function."
                  :end end))
 
 (defmethod circle-inversion ((line-segment line-segment))
-  (let ((start-point (/ (param-element (start line-segment) line-segment)))
-        (end-point (/ (param-element (end line-segment) line-segment)))
+  (let ((start-point (param-element (start line-segment) line-segment))
+        (end-point (param-element (end line-segment) line-segment))
         (line-image (circle-inversion/line line-segment)))
     (segment line-image
-             (element-p start-point line-image)
-             (element-p end-point line-image))))
+             (element-p (i/ start-point) line-image)
+             (element-p (i/ end-point) line-image))))
 
 (defmethod circle-inversion ((circle-segment circle-segment))
-  (let ((start-point (/ (param-element (start circle-segment) circle-segment)))
-        (end-point (/ (param-element (end circle-segment) circle-segment)))
+  (let ((start-point (param-element (start circle-segment) circle-segment))
+        (end-point (param-element (end circle-segment) circle-segment))
         (circle-image (circle-inversion/circle circle-segment)))
     ;; TODO what about orientation??
     (segment circle-image
-             (element-p start-point circle-image)
-             (element-p end-point circle-image))))
+             (element-p (i/ start-point) circle-image)
+             (element-p (i/ end-point) circle-image))))
 
 ;;; TODO figure out a more reliable way to describe circle segments
 ;;; how about using three points? or perhaps a vector pointing in the
