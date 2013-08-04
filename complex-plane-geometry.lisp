@@ -151,10 +151,18 @@
 
 (define-complex-plane-command (com-translate
                                :name "Translate" :menu t)
-    ((object 'projective-line)
-     (offset 'number))
-  (add-object
-   (translate offset object)))
+    ((object 'projective-line) (offset 'number))
+  (add-object (translate offset object)))
+
+(define-complex-plane-command (com-scale
+                               :name "Scale" :menu t)
+    ((object 'projective-line) (factor 'number))
+  (add-object (scale factor object)))
+
+(define-complex-plane-command (com-invert
+                               :name "Invert" :menu t)
+    ((object 'projective-line))
+  (add-object (circle-inversion object)))
 
 (define-complex-plane-command (com-draw-farey-sets :name "Draw Farey sets" :menu t)
     ()
