@@ -148,10 +148,10 @@ points p (fahnentransitiv)."
                  :start start :end end))
 
 (defmethod print-object ((line line) stream)
-  (format stream "(line ~A ~A)" (basepoint line) (direction line)))
+  (format stream "(line ~7E ~7E)" (basepoint line) (direction line)))
 
 (defmethod print-object ((line-segment line-segment) stream)
-  (format stream "(line-segment ~A ~A ~A ~A)"
+  (format stream "(line-segment ~7E ~7E ~7E ~7E)"
           (basepoint line-segment) (direction line-segment)
           (start line-segment) (end line-segment)))
 
@@ -192,10 +192,10 @@ points p (fahnentransitiv)."
                  :start start :end end))
 
 (defmethod print-object ((circle circle) stream)
-  (format stream "(circle ~A ~A)" (center circle) (radius circle)))
+  (format stream "(circle ~7E ~7E)" (center circle) (radius circle)))
 
 (defmethod print-object ((circle-segment circle-segment) stream)
-  (format stream "(circle-segment ~A ~A ~A ~A)"
+  (format stream "(circle-segment ~7E ~7E ~7E ~7E)"
           (center circle-segment) (radius circle-segment)
           (start circle-segment) (end circle-segment)))
 
@@ -212,7 +212,7 @@ points p (fahnentransitiv)."
   (make-instance 'triangle :vertices (list a b c)))
 
 (defmethod print-object ((triangle triangle) stream)
-  (format stream "(triangle ~{~A~^ ~})" (vertices triangle)))
+  (format stream "(triangle ~{~7E~^ ~})" (vertices triangle)))
 
 
 (defparameter fundamental-domain-base
