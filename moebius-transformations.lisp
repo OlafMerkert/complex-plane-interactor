@@ -301,7 +301,8 @@ points p (fahnentransitiv)."
     (or (zerop c) ; TODO account for full-circle?
         (<= 0 b c))))
 
-(defmethod element-p ((point number) (line line) &key)
+(defmethod element-p ((point number) (line line) &key segment)
+  (declare (ignore segment))
   (let ((param (/ (- point (basepoint line))
                   (direction line))))
     (when (almost= 0 (imagpart param))
@@ -317,10 +318,12 @@ points p (fahnentransitiv)."
 
 (defconstant infinity :infinity)
 
-(defmethod element-p ((point (eql infinity)) (line line) &key)
+(defmethod element-p ((point (eql infinity)) (line line) &key segment)
+  (declare (ignore segment))
   infinity)
 
-(defmethod element-p ((point (eql infinity)) (circle circle) &key))
+(defmethod element-p ((point (eql infinity)) (circle circle) &key segment)
+  (declare (ignore segment)))
 
 (defun i/ (x)
   "inversion on the complex projective line."
@@ -334,12 +337,13 @@ points p (fahnentransitiv)."
 (defun almost= (a b)
   (< (abs (- a b)) tolerance))
 
-(defmethod element-p ((point number) (circle circle) &key)
+(defmethod element-p ((point number) (circle circle) &key segment)
+  (declare (ignore segment))
   (when (almost= (dist^2 point (center circle))
            (expt (radius circle) 2))
     (angle (- point (center circle)))))
 
-(defmethod element-p ((point number) (circle-segment circle-segment)&key (segment t))
+(defmethod element-p ((point number) (circle-segment circle-segment) &key (segment t))
   (when (almost= (dist^2 point (center circle-segment))
            (expt (radius circle-segment) 2))
     (let ((a (angle (- point (center circle-segment)))))
