@@ -258,8 +258,8 @@ points p (fahnentransitiv)."
              (let* ((dif (- (basepoint line-1) (basepoint line-2)))
                     (x (realpart dif)) (y (imagpart dif)))
                (complex
-                (/ (- (* d x) (* c y)) det)
-                (/ (- (* a y) (* b x)) det))))
+                (/ (- (* a y) (* b x)) det)
+                (/ (- (* d x) (* c y)) det))))
             ;; same lines
             ((element-p (basepoint line-1) line-2)
              line-1)
