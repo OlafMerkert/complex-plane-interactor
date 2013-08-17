@@ -184,6 +184,33 @@ points p (fahnentransitiv)."
   ;; 1 corresponds to full circle, going counter-clockwise
   (start end))
 
+(defun circle-segment/normalise (start end)
+  "Make sure the distance between start and end is at most 1, and that
+  both start and end lie in the interval [0,2["
+  (mvbind (offset start) (floor start)
+    (let* ((end (- end offset))
+           (endr (rem end 1)))
+      (cond
+        ;; first consider the case where we have just one point
+        ((= start end)
+         (values start start))
+        ;; then the case of a full circle
+        ((= start endr)
+         (values start (+ start 1)))
+        ;; if we are in the interval [-1,1], we need to shift right.
+        ;; this only happens when endr is in [-1,0]
+        ((minusp endr)
+         (values (+ 1 start) (+ 1 endr)))
+        ;; otherwise, just return the ends
+        (t
+         (values start endr))))))
+
+(defmethod initialize-instance :after ((circle-segment circle-segment) &key)
+  (with-slots (start end) circle-segment
+    (mvbind (s e) (circle-segment/normalise start end)
+      (setf start s
+            end e))))
+
 (defun circle (center radius)
   (make-instance 'circle :center center :radius radius))
 
@@ -294,11 +321,9 @@ oo -> point-3"
   (or (<= a b c)
       (>= a b c)))
 
-(defun between-mod1 (a b c)
-  (let ((b (mod (- b a) 1))
-        (c (mod (- c a) 1)))
-    (or (zerop c) ; TODO account for full-circle?
-        (<= 0 b c))))
+(defun between-circle (start point end)
+  (or (between start point end)
+      (between start (+ point 1) end)))
 
 (defmethod element-p ((point number) (line line) &key segment)
   (declare (ignore segment))
@@ -347,7 +372,7 @@ oo -> point-3"
            (expt (radius circle-segment) 2))
     (let ((a (angle (- point (center circle-segment)))))
       (when (or (not segment)
-                (between-mod1 (start circle-segment) a (end circle-segment)))
+                (between-circle (start circle-segment) a (end circle-segment)))
         a))))
 
 (defmethod param-element (parameter (line line))
@@ -442,9 +467,6 @@ oo -> point-3"
                  :start (start line-segment)
                  :end (end line-segment)))
 
-(defun m+ (&rest args)
-  (mod (apply #'+ args) 1))
-
 (defun angle (number)
   (let ((a (/ (atan (imagpart number) (realpart number)) 2 pi)))
     (values (mod a 1) a)))
@@ -459,8 +481,8 @@ oo -> point-3"
     (make-instance 'circle-segment
                    :center (* factor (center circle-segment))
                    :radius (* (abs factor) (radius circle-segment))
-                   :start (m+ (start circle-segment) angle)
-                   :end (m+ (end circle-segment) angle ))))
+                   :start (+ (start circle-segment) angle)
+                   :end (+ (end circle-segment) angle ))))
 
 ;;; the (geometrically) most interesting part is inversion at the circle
 (defun circle-inversion/circle (circle)
