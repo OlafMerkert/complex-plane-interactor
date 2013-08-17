@@ -149,6 +149,13 @@
      (point-3 'number :prompt "Vertex 3"))
   (add-object (make-instance 'triangle :vertices (list point-1 point-2 point-3))))
 
+(define-complex-plane-command (com-add-3points
+                               :name "Add projective line through 3 points" :menu t)
+    ((point-1 'number :prompt "Point 1")
+     (point-2 'number :prompt "Point 2")
+     (point-3 'number :prompt "Point 3"))
+    (add-object (projective-line-3points point-1 point-2 point-3)))
+
 (define-complex-plane-command (com-translate
                                :name "Translate" :menu t)
     ((object 'projective-line) (offset 'number))
@@ -163,6 +170,12 @@
                                :name "Invert" :menu t)
     ((object 'projective-line))
   (add-object (circle-inversion object)))
+
+(define-complex-plane-command (com-mittelsenkrechte
+                               :name t :menu nil)
+    ((point-1 'number :prompt "Point 1")
+     (point-2 'number :prompt "Point 2"))
+  (add-object (mittelsenkrechte point-1 point-2)))
 
 (define-complex-plane-command (com-draw-farey-sets :name "Draw Farey sets" :menu t)
     ()
