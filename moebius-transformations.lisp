@@ -36,7 +36,10 @@
    #:end
    #:triangle
    #:triangle-edges
-   #:fundamental-domain-base))
+   #:fundamental-domain-base
+   #:line-segment-between-points
+   #:moebius-from-points
+   #:inverse))
 
 (in-package :moebius-transformations)
 
@@ -64,6 +67,10 @@
   (a b c d)
   (:documentation "z |-> (a z + b)/(c z + d)"))
 
+(defmethod print-object ((mt moebius-transformation) stream)
+  (with-slots (a b c d) mt
+    (format stream "(mt ~A ~A ~A ~A)" a b c d)))
+
 (defun det (mt)
   (with-slots (a b c d) mt
     (- (* a d) (* b c))))
@@ -83,8 +90,16 @@ multiplication."
 
 (defmethod evaluate ((mt moebius-transformation) (z number))
   (with-slots (a b c d) mt
-    (/ (+ (* a z) b)
-       (+ (* c z) d))))
+    (let ((den (+ (* c z) d)))
+      (if (zerop den)
+          :infinity
+          (/ (+ (* a z) b) den)))))
+
+(defmethod evaluate ((mt moebius-transformation) (z (eql :infinity)))
+  (with-slots (a c) mt
+    (if (zerop c)
+        :infinity
+        (/ a c))))
 
 (defun mt (a b c d)
   (make-instance 'moebius-transformation
@@ -252,7 +267,7 @@ points p (fahnentransitiv)."
 
 (defun line-segment-between-points (point-1 point-2 point-3)
   "find the transformation that sends 0 -> point-1, 1 -> point-2 and
-oo -> point-3"
+oo -> point-3, and map the fundamental segment from 0 to 1 under it."
   (let ((mt (inverse (moebius-from-points point-1 point-2 point-3))))
     (transform mt fundamental-domain-base)))
 
