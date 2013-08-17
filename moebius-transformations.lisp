@@ -224,9 +224,8 @@ points p (fahnentransitiv)."
   "The base of the 'triangle' with vertices 0,1 and oo.")
 
 (defun line-segment-between-points (point-1 point-2 point-3)
-  ""
-  ;; find the transformation that sends 0 -> point-1, 1 -> point-2 and
-  ;; oo -> point-3
+  "find the transformation that sends 0 -> point-1, 1 -> point-2 and
+oo -> point-3"
   (let ((mt (inverse (moebius-from-points point-1 point-2 point-3))))
     (transform mt fundamental-domain-base)))
 
@@ -249,17 +248,17 @@ points p (fahnentransitiv)."
 ;;; some functions for incidence of geometric objects
 (defmethod intersect ((line-1 line) (line-2 line))
   (let ((a (realpart (direction line-1)))
-        (c (imagpart (direction line-1)))
-        (b (realpart (direction line-2)))
+        (b (imagpart (direction line-1)))
+        (c (realpart (direction line-2)))
         (d (imagpart (direction line-2))))
     (let ((det (- (* a d) (* b c))))
       (cond ((not (zerop det))
              ;;  we have a unique intersection
              (let* ((dif (- (basepoint line-1) (basepoint line-2)))
                     (x (realpart dif)) (y (imagpart dif)))
-               (complex
-                (/ (- (* a y) (* b x)) det)
-                (/ (- (* d x) (* c y)) det))))
+               (let (#|(u (/ (- (* d x) (* c y)) det))|#
+                     (v (/ (- (* a y) (* b x)) det)))
+                 (param-element v line-2))))
             ;; same lines
             ((element-p (basepoint line-1) line-2)
              line-1)
