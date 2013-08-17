@@ -522,14 +522,6 @@ oo -> point-3"
 (defmethod circle-inversion ((line line))
   (circle-inversion/line line))
 
-(defun methodcall (method specialisers &rest args)
-  ;; TODO this thing still has many problems.
-  "Call a `method' with the specified `specialisers' on `args'. Note
-that `method' is expected to be a function."
-  (let ((m (find-method method nil
-                        (mapcar #'find-class (mklist specialisers)))))
-    (funcall (sb-pcl:method-function m) args nil)))
-
 (defmethod segment ((line line) start end)
   (unless (and start end)
     (error "Missing line-segment delimiters: start ~A  end ~A"

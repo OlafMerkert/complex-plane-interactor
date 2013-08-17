@@ -189,10 +189,15 @@
 
 (define-complex-plane-command (com-test-stuff :name "Test stuff" :menu t)
     ()
-  #|(add-object fundamental-domain-base)|#
+  (add-object fundamental-domain-base)
   #|(add-object (make-instance 'line-segment :basepoint 0 :direction (+ 1 i)
   :start -1 :end 2))|#
-  (add-object (make-instance 'triangle :vertices (list 0 1 i))))
+  (let ((tri (make-instance 'triangle :vertices (list 0 1 i))))
+    (with-canvas
+      (iter (for edge in (triangle-edges tri))
+            (for colour in (list +blue+ +red+ +green+))
+            (with-drawing-options (canvas :ink colour)
+             (add-object edge))))))
 
 ;;; TODO get presentations to work
 
