@@ -195,9 +195,10 @@ points p (fahnentransitiv)."
   (center
    radius))
 
-(defclass/f circle-segment (circle)
+(defclass/f circle-segment (circle segment)
+  ()
   ;; 1 corresponds to full circle, going counter-clockwise
-  (start end))
+  )
 
 (defun circle-segment/normalise (start end)
   "Make sure the distance between start and end is at most 1, and that
@@ -371,15 +372,16 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
     (:infinity 0)
     (t (/ x))))
 
-(defparameter tolerance 1e-7)
+(defparameter tolerance 1e-6)
 
 (defun almost= (a b)
-  (< (abs (- a b)) tolerance))
+  (let ((d (abs (- a b))))
+    (values (< d tolerance) d)))
 
 (defmethod element-p ((point number) (circle circle) &key segment)
   (declare (ignore segment))
   (when (almost= (dist^2 point (center circle))
-           (expt (radius circle) 2))
+                 (expt (radius circle) 2))
     (angle (- point (center circle)))))
 
 (defmethod element-p ((point number) (circle-segment circle-segment) &key (segment t))
@@ -398,8 +400,15 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
 
 (defmethod param-element (parameter (circle circle))
   (assert (realp parameter))
-  (+ (center circle) (* (radius circle) (exp (* 2 pi i parameter)))))
+  (+ (center circle)
+     (* (radius circle)
+        (exp (* 2 pi i parameter)))))
 
+(defmethod param-element ((parameter (eql :start)) (segment segment))
+  (param-element (start segment) segment))
+
+(defmethod param-element ((parameter (eql :end)) (segment segment))
+  (param-element (end segment) segment))
 
 (defun distinct-p (arg &rest args)
   "Check that all arguments are different."
@@ -433,17 +442,31 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
         (ms3 (mittelsenkrechte point-1 point-3)))
     (intersect ms2 ms3)))
 
+(defmacro ->e (&rest forms)
+  (labels ((builder (forms)
+             (dbind (first . rest) forms
+              (cond ((null rest)
+                     first)
+                    ((atom first)
+                     `(,first ,(builder rest)))
+                    (t
+                     `(,@first ,(builder rest)))))))
+    (builder forms)))
+
 ;; moebius transformations map projective lines on projective lines.
 (defmethod transform ((mt moebius-transformation) (line projective-line))
   (with-slots (a b c d) mt
     (if (zerop c)
-        ;; TODO direct implementation (perhaps)
+        ;; TODO direct implementation (perhaps?)
         (translate (/ b d) (scale (/ a d) line))
-        ;;
-        (let* ((det (det mt))
-               (a* (/ (- c) det))
-               (b* (/ a det)))
-          (translate b* (scale a* (circle-inversion (translate (/ d c) line))))))))
+        ;; first norm to c = 1
+        (let ((a (/ a c)) (b (/ b c)) (c 1) (d (/ d c)))
+          (let ((det (- (* a d) (* b c))))
+            (->e (translate a)
+                 circle-inversion
+                 (scale (/ -1 det))
+                 (translate d)
+                 line))))))
 
 (defmethod translate ((offset number) (line line))
   (make-instance 'line
@@ -558,16 +581,16 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
                  :end end))
 
 (defmethod circle-inversion ((line-segment line-segment))
-  (let ((start-point (param-element (start line-segment) line-segment))
-        (end-point (param-element (end line-segment) line-segment))
+  (let ((start-point (param-element :start line-segment))
+        (end-point (param-element :end line-segment))
         (line-image (circle-inversion/line line-segment)))
     (segment line-image
              (element-p (i/ start-point) line-image)
              (element-p (i/ end-point) line-image))))
 
 (defmethod circle-inversion ((circle-segment circle-segment))
-  (let ((start-point (param-element (start circle-segment) circle-segment))
-        (end-point (param-element (end circle-segment) circle-segment))
+  (let ((start-point (param-element :start circle-segment))
+        (end-point (param-element :end circle-segment))
         (circle-image (circle-inversion/circle circle-segment)))
     ;; TODO what about orientation??
     (segment circle-image
