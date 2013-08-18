@@ -602,12 +602,18 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
                  :start start
                  :end end))
 
+(define-condition missing-incidence () ())
+
 (defun compute-parameter (point projective-line)
-  (aif (element-p point projective-line :segment nil)
-       (values it t)
-       ;; TODO signal a condition, and don't project automatically
-       (element-p (project point projective-line)
-                  projective-line :segment nil)))
+  (restart-case
+      (aif (element-p point projective-line :segment nil)
+           (values it t)
+           (error 'missing-incidence))
+    (project-to-line ()
+      (element-p (project point projective-line)
+                 projective-line :segment nil))
+    (no-parameter () nil)
+    (provide-parameter (p) p)))
 
 (defmethod circle-inversion ((line-segment line-segment))
   (let ((start-point (param-element :start line-segment))
