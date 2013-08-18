@@ -442,6 +442,28 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
         (ms3 (mittelsenkrechte point-1 point-3)))
     (intersect ms2 ms3)))
 
+;;; Project points onto lines and circles
+(defgeneric project (point projective-line)
+  (:documentation "Project the `point' to the closest point contained
+  in `projective-line'. "))
+
+(defmethod project ((point number) (line line))
+  (let ((perpendicular (line point (* i (direction line)))))
+    (intersect perpendicular line)))
+
+(defun line-2-points (point-1 point-2)
+  (when (= point-1 point-2)
+    (error "Can only construct a line uniquely when two points are given."))
+  (line point-1 (- point-2 point-1)))
+
+(defmethod project ((point number) (circle circle))
+  (let ((perpendicular (line-2-points point (center circle))))
+    ;; WARNING cannot project the center of the circle
+    (mvbind (point-1 point-2) (intersect perpendicular circle)
+      (if (not point-2) point-1
+          (if (< (dist^2 point-1 point) (dist^2 point-2 point))
+              point-1 point-2)))))
+
 (defmacro ->e (&rest forms)
   (labels ((builder (forms)
              (dbind (first . rest) forms
