@@ -602,13 +602,19 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
                  :start start
                  :end end))
 
+(defun compute-parameter (point projective-line)
+  (aif (element-p point projective-line :segment nil)
+       (values it t)
+       (element-p (project point projective-line)
+                  projective-line :segment nil)))
+
 (defmethod circle-inversion ((line-segment line-segment))
   (let ((start-point (param-element :start line-segment))
         (end-point (param-element :end line-segment))
         (line-image (circle-inversion/line line-segment)))
     (segment line-image
-             (element-p (i/ start-point) line-image)
-             (element-p (i/ end-point) line-image))))
+             (compute-parameter (i/ start-point) line-image)
+             (compute-parameter (i/ end-point) line-image))))
 
 (defmethod circle-inversion ((circle-segment circle-segment))
   (let ((start-point (param-element :start circle-segment))
@@ -616,8 +622,10 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
         (circle-image (circle-inversion/circle circle-segment)))
     ;; TODO what about orientation??
     (segment circle-image
-             (element-p (i/ start-point) circle-image)
-             (element-p (i/ end-point) circle-image))))
+             (compute-parameter (i/ start-point) circle-image)
+             (compute-parameter (i/ end-point) circle-image))))
+
+
 
 ;;; TODO figure out a more reliable way to describe circle segments
 ;;; how about using three points? or perhaps a vector pointing in the
