@@ -372,7 +372,7 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
     (:infinity 0)
     (t (/ x))))
 
-(defparameter tolerance 1e-6)
+(defparameter tolerance 1e-8)
 
 (defun almost= (a b)
   (let ((d (abs (- a b))))
@@ -605,6 +605,7 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
 (defun compute-parameter (point projective-line)
   (aif (element-p point projective-line :segment nil)
        (values it t)
+       ;; TODO signal a condition, and don't project automatically
        (element-p (project point projective-line)
                   projective-line :segment nil)))
 
