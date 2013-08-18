@@ -231,7 +231,7 @@ points p (fahnentransitiv)."
   (make-instance 'circle :center center :radius radius))
 
 (defun circle-segment (center radius start end)
-  (make-instance 'circle :center center :radius radius
+  (make-instance 'circle-segment :center center :radius radius
                  :start start :end end))
 
 (defmethod print-object ((circle circle) stream)

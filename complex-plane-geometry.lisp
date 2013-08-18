@@ -115,8 +115,9 @@
                     (realpart (center circle-segment))
                     (imagpart (center circle-segment))
                     (radius circle-segment)
-                    :start-angle (* 2 pi (end circle-segment))
-                    :end-angle   (* 2 pi (start circle-segment))
+                    ;; ensure that angles in [0,2] are drawn correctly
+                    :start-angle (* -2 pi (end circle-segment))
+                    :end-angle   (* -2 pi (start circle-segment))
                     :filled nil
                     :transformation transformation))))
 
