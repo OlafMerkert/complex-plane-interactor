@@ -62,6 +62,7 @@
 
 (define-presentation-type triangle ())
 
+
 (defmethod add-object ((line line))
   ;; determine the edge points
   (mvbind (min max) (intersect-rectangle line :rmin -50 :rmax 50 :imin -40 :imax 40)
@@ -190,7 +191,7 @@
 
 (define-complex-plane-command (com-test-stuff :name "Test stuff" :menu t)
     ()
-  (add-object fundamental-domain-base)
+  #|(add-object fundamental-domain-base)|#
   #|(add-object (make-instance 'line-segment :basepoint 0 :direction (+ 1 i)
   :start -1 :end 2))|#
   (let ((tri (make-instance 'triangle :vertices (list 0 1 i))))
@@ -198,7 +199,23 @@
       (iter (for edge in (triangle-edges tri))
             (for colour in (list +blue+ +red+ +green+))
             (with-drawing-options (canvas :ink colour)
-             (add-object edge))))))
+              (add-object edge))))))
+
+(define-complex-plane-command (com-fundamental-line-segment
+                               :name "Test single edge" :menu t) ()
+  (add-object (moebius-transformations::line-segment-between-points
+               1 i 0)))
+
+(define-complex-plane-command (com-segment-test
+                               :name t :menu t)
+    ()
+  (add-object (circle-segment -1 1 1/2 5/4))
+  (add-object (circle-segment 1 1 0 5/4)))
+
+#|(setf m (inverse (moebius-from-points 0 i 1)))|#
+
+#|(evaluate m 1)|#
+
 
 ;;; TODO get presentations to work
 
