@@ -69,7 +69,8 @@
 
 (defmethod print-object ((mt moebius-transformation) stream)
   (with-slots (a b c d) mt
-    (format stream "(mt ~A ~A ~A ~A)" a b c d)))
+    (format stream "(mt ~A ~A ~A ~A)" a b c d))
+  mt)
 
 (defun det (mt)
   (with-slots (a b c d) mt
@@ -163,12 +164,14 @@ points p (fahnentransitiv)."
                  :start start :end end))
 
 (defmethod print-object ((line line) stream)
-  (format stream "(line ~7E ~7E)" (basepoint line) (direction line)))
+  (format stream "(line ~7E ~7E)" (basepoint line) (direction line))
+  line)
 
 (defmethod print-object ((line-segment line-segment) stream)
   (format stream "(line-segment ~7E ~7E ~7E ~7E)"
           (basepoint line-segment) (direction line-segment)
-          (start line-segment) (end line-segment)))
+          (start line-segment) (end line-segment))
+  line-segment)
 
 (defgeneric normalise-direction (line)
   (:documentation "Normalise the `direction' vector to length 1."))
@@ -235,12 +238,14 @@ points p (fahnentransitiv)."
                  :start start :end end))
 
 (defmethod print-object ((circle circle) stream)
-  (format stream "(circle ~7E ~7E)" (center circle) (radius circle)))
+  (format stream "(circle ~7E ~7E)" (center circle) (radius circle))
+  circle)
 
 (defmethod print-object ((circle-segment circle-segment) stream)
   (format stream "(circle-segment ~7E ~7E ~7E ~7E)"
           (center circle-segment) (radius circle-segment)
-          (start circle-segment) (end circle-segment)))
+          (start circle-segment) (end circle-segment))
+  circle-segment)
 
 
 ;;; **********************************************************************
