@@ -87,6 +87,7 @@ multiplication."
 
 (defun inverse (mt)
   (with-slots (a b c d) mt
+    ;; this assumes det = 1
     (mt d (- b) (- c) a)))
 
 (defmethod evaluate ((mt moebius-transformation) (z number))
@@ -470,6 +471,7 @@ oo -> point-3, and map the fundamental segment from 0 to 1 under it."
               point-1 point-2)))))
 
 (defmacro ->e (&rest forms)
+  "A threading macro."
   (labels ((builder (forms)
              (dbind (first . rest) forms
               (cond ((null rest)
